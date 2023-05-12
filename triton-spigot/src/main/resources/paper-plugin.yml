@@ -5,7 +5,7 @@ description: "A plugin that replaces any message on your server, to the receiver
   \ language, in real time!"
 author: Rexcantor64
 website: https://triton.rexcantor64.com/
-api-version: "1.13"
+api-version: "1.19"
 
 folia-supported: true
 
