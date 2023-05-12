@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'net.minecrell.plugin-yml.bukkit' version '0.5.2'
+    id 'net.minecrell.plugin-yml.bukkit' version '0.5.3'
 }
 
 String pluginDescription = project.property("pluginDescription")
@@ -17,6 +17,7 @@ dependencies {
     compileOnly project(path: ":core")
     implementation project(path: ":spigot-legacy")
     implementation project(path: ":v1_13")
+
 
     compileOnly 'org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT'
     compileOnly 'dev.folia:folia-api:1.20.1-R0.1-SNAPSHOT'

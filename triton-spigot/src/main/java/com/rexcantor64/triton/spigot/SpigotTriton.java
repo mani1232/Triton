@@ -3,6 +3,7 @@ package com.rexcantor64.triton.spigot;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.rexcantor64.triton.Triton;
 import com.rexcantor64.triton.api.players.LanguagePlayer;
+import com.rexcantor64.triton.api.scheduler.BaseScheduler;
 import com.rexcantor64.triton.player.PlayerManager;
 import com.rexcantor64.triton.plugin.PluginLoader;
 import com.rexcantor64.triton.spigot.banners.BannerBuilder;
@@ -18,6 +19,8 @@ import com.rexcantor64.triton.spigot.packetinterceptor.ProtocolLibListener;
 import com.rexcantor64.triton.spigot.placeholderapi.TritonPlaceholderHook;
 import com.rexcantor64.triton.spigot.player.SpigotLanguagePlayer;
 import com.rexcantor64.triton.spigot.plugin.SpigotPlugin;
+import com.rexcantor64.triton.spigot.scheduler.FoliaScheduler;
+import com.rexcantor64.triton.spigot.scheduler.SpigotScheduler;
 import com.rexcantor64.triton.spigot.wrappers.MaterialWrapperManager;
 import com.rexcantor64.triton.terminal.Log4jInjector;
 import com.rexcantor64.triton.utils.ReflectionUtils;
@@ -52,11 +55,13 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
     private SpigotCommandHandler commandHandler;
     @Getter
     private boolean papiEnabled = false;
-    private int refreshTaskId = -1;
+    private BaseScheduler refreshTask = null;
     @Getter
     private GuiManager guiManager;
     @Getter
     private final BannerBuilder bannerBuilder = new BannerBuilder();
+    @Getter
+    private BaseScheduler scheduler;
 
     public SpigotTriton(PluginLoader loader) {
         super(new PlayerManager<>(SpigotLanguagePlayer::new), new SpigotBridgeManager());
@@ -79,6 +84,12 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
         instance = this;
 
         super.onEnable();
+
+        if (isFolia()) {
+            scheduler = new FoliaScheduler(getLoader());
+        } else {
+            scheduler = new SpigotScheduler(getLoader());
+        }
 
         if (!this.isProtocolLibAvailable()) {
             getLogger().logError("Shutting down...");
@@ -158,10 +169,9 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
 
     @Override
     protected void startConfigRefreshTask() {
-        if (refreshTaskId != -1) Bukkit.getScheduler().cancelTask(refreshTaskId);
+        if (refreshTask != null) refreshTask.cancel();
         if (getConfig().getConfigAutoRefresh() <= 0) return;
-        refreshTaskId = Bukkit.getScheduler()
-            .scheduleSyncDelayedTask(getLoader(), this::reload, getConfig().getConfigAutoRefresh() * 20L);
+        refreshTask = scheduler.runTaskLater(null, getConfig().getConfigAutoRefresh() * 20L, this::reload);
     }
 
     /**
@@ -250,7 +260,7 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
 
     @Override
     public void runAsync(Runnable runnable) {
-        Bukkit.getScheduler().runTaskAsynchronously(getLoader(), runnable);
+        scheduler.runTaskAsynchronously(runnable);
     }
 
     public static boolean isFolia() {

@@ -695,7 +695,8 @@ public class EntitiesPacketHandler extends PacketHandler {
                             true,
                             EnumWrappers.NativeGameMode.fromBukkit(humanEntity.getGameMode()),
                             WrappedGameProfile.fromPlayer(humanEntity),
-                            WrappedChatComponent.fromText(humanEntity.getPlayerListName())
+                            WrappedChatComponent.fromText(humanEntity.getPlayerListName()),
+                            null
                     )
             );
 
