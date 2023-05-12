@@ -24,7 +24,6 @@ import com.rexcantor64.triton.utils.ReflectionUtils;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.val;
-import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatColor;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SingleLineChart;
@@ -89,7 +88,7 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
 
         Metrics metrics = new Metrics(getLoader(), 5606);
         metrics.addCustomChart(new SingleLineChart("active_placeholders",
-                () -> this.getTranslationManager().getTranslationCount()));
+            () -> this.getTranslationManager().getTranslationCount()));
 
         // Setup custom managers
         wrapperManager = new MaterialWrapperManager();
@@ -162,7 +161,7 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
         if (refreshTaskId != -1) Bukkit.getScheduler().cancelTask(refreshTaskId);
         if (getConfig().getConfigAutoRefresh() <= 0) return;
         refreshTaskId = Bukkit.getScheduler()
-                .scheduleSyncDelayedTask(getLoader(), this::reload, getConfig().getConfigAutoRefresh() * 20L);
+            .scheduleSyncDelayedTask(getLoader(), this::reload, getConfig().getConfigAutoRefresh() * 20L);
     }
 
     /**
@@ -232,7 +231,7 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
                     languagePlayer.setLang(lang);
                     player.closeInventory();
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', Triton.get().getMessagesConfig()
-                            .getMessage("success.selector", lang.getDisplayName())));
+                        .getMessage("success.selector", lang.getDisplayName())));
                 }));
             }
             gui.open(player);
@@ -252,6 +251,15 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
     @Override
     public void runAsync(Runnable runnable) {
         Bukkit.getScheduler().runTaskAsynchronously(getLoader(), runnable);
+    }
+
+    public static boolean isFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.scheduler.RegionScheduler");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     public <T> Optional<T> callSync(Callable<T> callable) {
