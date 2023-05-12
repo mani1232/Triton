@@ -1,6 +1,6 @@
 name: Triton
 version: "4.0.0-SNAPSHOT"
-main: om.rexcantor64.triton.spigot.plugin.SpigotPlugin
+main: com.rexcantor64.triton.spigot.plugin.SpigotPlugin
 description: "A plugin that replaces any message on your server, to the receiver's\
   \ language, in real time!"
 author: Rexcantor64
