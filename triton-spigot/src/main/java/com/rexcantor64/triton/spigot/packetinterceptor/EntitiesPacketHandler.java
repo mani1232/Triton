@@ -16,8 +16,6 @@ import com.rexcantor64.triton.spigot.utils.WrappedComponentUtils;
 import com.rexcantor64.triton.utils.ComponentUtils;
 import lombok.val;
 import net.kyori.adventure.text.Component;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.chat.ComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -133,26 +131,26 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         // Clone the data watcher, so we don't edit the display name permanently
         val dataWatcherValues = packet.getPacket()
-                .getDataWatcherModifier()
-                .readSafely(0)
-                .asMap()
-                .values();
+            .getDataWatcherModifier()
+            .readSafely(0)
+            .asMap()
+            .values();
         val dataWatcher = new WrappedDataWatcher(new ArrayList<>(dataWatcherValues));
 
         val displayNameWatchableObject = dataWatcher.getWatchableObject(2);
         if (displayNameWatchableObject != null) {
             this.dataWatcherHandler.translatePlayerDisplayNameWatchableObject(
-                    languagePlayer,
-                    displayNameWatchableObject,
-                    (displayName) -> addEntity(
-                            languagePlayer.getEntitiesMap(),
-                            packet.getPlayer().getWorld(),
-                            entityId,
-                            Optional.of(displayName)
-                    ),
-                    (hasCustomName) -> this.dataWatcherHandler
-                            .getCustomNameVisibilityWatchableObject(hasCustomName)
-                            .ifPresent(obj -> dataWatcher.setObject(3, obj))
+                languagePlayer,
+                displayNameWatchableObject,
+                (displayName) -> addEntity(
+                    languagePlayer.getEntitiesMap(),
+                    packet.getPlayer().getWorld(),
+                    entityId,
+                    Optional.of(displayName)
+                ),
+                (hasCustomName) -> this.dataWatcherHandler
+                    .getCustomNameVisibilityWatchableObject(hasCustomName)
+                    .ifPresent(obj -> dataWatcher.setObject(3, obj))
             ).ifPresent(obj -> dataWatcher.setObject(2, obj));
         }
 
@@ -176,15 +174,29 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         // TODO For now, it is only possible to translate NPCs that are saved server side
         // Fetch entity object using main thread, otherwise we'll get concurrency issues
-        SpigotTriton.asSpigot()
+        if (SpigotTriton.isFolia()) {
+            SpigotTriton.asSpigot().getScheduler().runTask(packet.getPlayer().getLocation(), () -> {
+                Entity entity = packet.getPacket().getEntityModifier(packet).readSafely(0);
+                if (entity != null) {
+                    addEntity(
+                        languagePlayer.getPlayersMap(),
+                        packet.getPlayer().getWorld(),
+                        entity.getEntityId(),
+                        entity
+                    );
+                }
+            });
+        } else {
+            SpigotTriton.asSpigot()
                 .callSync(() -> packet.getPacket().getEntityModifier(packet).readSafely(0))
                 .ifPresent(entity -> addEntity(
-                                languagePlayer.getPlayersMap(),
-                                packet.getPlayer().getWorld(),
-                                entity.getEntityId(),
-                                entity
-                        )
+                        languagePlayer.getPlayersMap(),
+                        packet.getPlayer().getWorld(),
+                        entity.getEntityId(),
+                        entity
+                    )
                 );
+        }
     }
 
     /**
@@ -218,23 +230,23 @@ public class EntitiesPacketHandler extends PacketHandler {
                 // Index 2 is "Custom Name" of type "OptChat"
                 // https://wiki.vg/Entity_metadata#Entity
                 newWatchableObjects.add(
-                        this.dataWatcherHandler.translatePlayerDisplayNameWatchableObject(
-                                languagePlayer,
-                                oldObject,
-                                (displayName) -> addEntity(
-                                        languagePlayer.getEntitiesMap(),
-                                        packet.getPlayer().getWorld(),
-                                        entityId,
-                                        Optional.of(displayName)
-                                ),
-                                (hasCustomName) -> this.dataWatcherHandler
-                                        .getCustomNameVisibilityWatchableObject(hasCustomName)
-                                        .ifPresent(obj -> {
-                                            newWatchableObjects.add(obj);
-                                            // Ensure the original WatchableObject, if existed, will not be added to the list
-                                            skipHideCustomName.set(true);
-                                        })
-                        ).orElse(oldObject)
+                    this.dataWatcherHandler.translatePlayerDisplayNameWatchableObject(
+                        languagePlayer,
+                        oldObject,
+                        (displayName) -> addEntity(
+                            languagePlayer.getEntitiesMap(),
+                            packet.getPlayer().getWorld(),
+                            entityId,
+                            Optional.of(displayName)
+                        ),
+                        (hasCustomName) -> this.dataWatcherHandler
+                            .getCustomNameVisibilityWatchableObject(hasCustomName)
+                            .ifPresent(obj -> {
+                                newWatchableObjects.add(obj);
+                                // Ensure the original WatchableObject, if existed, will not be added to the list
+                                skipHideCustomName.set(true);
+                            })
+                    ).orElse(oldObject)
                 );
             } else if (oldObject.getIndex() == 3) {
                 // Index 3 is "Is custom name visible" of type "Boolean"
@@ -247,16 +259,16 @@ public class EntitiesPacketHandler extends PacketHandler {
                 // https://wiki.vg/Entity_metadata#Entity
                 // Used to translate items inside (glowing) item frames
                 newWatchableObjects.add(
-                        this.dataWatcherHandler.translateItemFrameItems(
-                                languagePlayer,
-                                oldObject,
-                                (itemStack) -> addEntity(
-                                        languagePlayer.getItemFramesMap(),
-                                        packet.getPlayer().getWorld(),
-                                        entityId,
-                                        itemStack
-                                )
-                        ).orElse(oldObject)
+                    this.dataWatcherHandler.translateItemFrameItems(
+                        languagePlayer,
+                        oldObject,
+                        (itemStack) -> addEntity(
+                            languagePlayer.getItemFramesMap(),
+                            packet.getPlayer().getWorld(),
+                            entityId,
+                            itemStack
+                        )
+                    ).orElse(oldObject)
                 );
             } else {
                 newWatchableObjects.add(oldObject);
@@ -297,23 +309,23 @@ public class EntitiesPacketHandler extends PacketHandler {
                 // Index 2 is "Custom Name" of type "OptChat"
                 // https://wiki.vg/Entity_metadata#Entity
                 newWatchableObjects.add(
-                        this.dataValueHandler.translatePlayerDisplayNameDataValue(
-                                languagePlayer,
-                                oldObject,
-                                (displayName) -> addEntity(
-                                        languagePlayer.getEntitiesMap(),
-                                        packet.getPlayer().getWorld(),
-                                        entityId,
-                                        Optional.of(displayName)
-                                ),
-                                (hasCustomName) -> this.dataValueHandler
-                                        .getCustomNameVisibilityDataValue(hasCustomName)
-                                        .ifPresent(obj -> {
-                                            newWatchableObjects.add(obj);
-                                            // Ensure the original WatchableObject, if existed, will not be added to the list
-                                            skipHideCustomName.set(true);
-                                        })
-                        ).orElse(oldObject)
+                    this.dataValueHandler.translatePlayerDisplayNameDataValue(
+                        languagePlayer,
+                        oldObject,
+                        (displayName) -> addEntity(
+                            languagePlayer.getEntitiesMap(),
+                            packet.getPlayer().getWorld(),
+                            entityId,
+                            Optional.of(displayName)
+                        ),
+                        (hasCustomName) -> this.dataValueHandler
+                            .getCustomNameVisibilityDataValue(hasCustomName)
+                            .ifPresent(obj -> {
+                                newWatchableObjects.add(obj);
+                                // Ensure the original WatchableObject, if existed, will not be added to the list
+                                skipHideCustomName.set(true);
+                            })
+                    ).orElse(oldObject)
                 );
             } else if (oldObject.getIndex() == 3) {
                 // Index 3 is "Is custom name visible" of type "Boolean"
@@ -326,16 +338,16 @@ public class EntitiesPacketHandler extends PacketHandler {
                 // https://wiki.vg/Entity_metadata#Entity
                 // Used to translate items inside (glowing) item frames
                 newWatchableObjects.add(
-                        this.dataValueHandler.translateItemFrameItems(
-                                languagePlayer,
-                                oldObject,
-                                (itemStack) -> addEntity(
-                                        languagePlayer.getItemFramesMap(),
-                                        packet.getPlayer().getWorld(),
-                                        entityId,
-                                        itemStack
-                                )
-                        ).orElse(oldObject)
+                    this.dataValueHandler.translateItemFrameItems(
+                        languagePlayer,
+                        oldObject,
+                        (itemStack) -> addEntity(
+                            languagePlayer.getItemFramesMap(),
+                            packet.getPlayer().getWorld(),
+                            entityId,
+                            itemStack
+                        )
+                    ).orElse(oldObject)
                 );
             } else {
                 newWatchableObjects.add(oldObject);
@@ -364,10 +376,10 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         val world = packet.getPlayer().getWorld();
         removeEntities(
-                ids,
-                languagePlayer.getEntitiesMap().get(world),
-                languagePlayer.getPlayersMap().get(world),
-                languagePlayer.getItemFramesMap().get(world)
+            ids,
+            languagePlayer.getEntitiesMap().get(world),
+            languagePlayer.getPlayersMap().get(world),
+            languagePlayer.getItemFramesMap().get(world)
         );
     }
 
@@ -415,8 +427,8 @@ public class EntitiesPacketHandler extends PacketHandler {
             WrappedGameProfile oldGP = data.getProfile();
             if (oldGP != null) {
                 newGP = oldGP.withName(translateAndTruncate(
-                        languagePlayer,
-                        oldGP.getName()
+                    languagePlayer,
+                    oldGP.getName()
                 ));
                 newGP.getProperties().putAll(oldGP.getProperties());
             }
@@ -424,16 +436,16 @@ public class EntitiesPacketHandler extends PacketHandler {
             if (msg != null) {
                 WrappedChatComponent finalMsg = msg; // required for lambda
                 msg = parser()
-                        .translateComponent(
-                                WrappedComponentUtils.deserialize(msg),
-                                languagePlayer,
-                                getConfig().getHologramSyntax()
-                        )
-                        .mapToObj(
-                                WrappedComponentUtils::serialize,
-                                () -> finalMsg,
-                                () -> null
-                        );
+                    .translateComponent(
+                        WrappedComponentUtils.deserialize(msg),
+                        languagePlayer,
+                        getConfig().getHologramSyntax()
+                    )
+                    .mapToObj(
+                        WrappedComponentUtils::serialize,
+                        () -> finalMsg,
+                        () -> null
+                    );
             }
             dataListNew.add(new PlayerInfoData(data.getProfileId(), data.getLatency(), data.isListed(), data.getGameMode(), newGP, msg, data.getProfileKeyData()));
         }
@@ -507,16 +519,16 @@ public class EntitiesPacketHandler extends PacketHandler {
                 final List<WrappedDataValue> dataValues = new ArrayList<>();
                 val displayNameComponent = ComponentUtils.deserializeFromJson(displayName);
                 val result = parser()
-                        .translateComponent(
-                                displayNameComponent,
-                                languagePlayer,
-                                getConfig().getHologramSyntax()
-                        )
-                        .mapToObj(
-                                Function.identity(),
-                                () -> displayNameComponent,
-                                () -> null
-                        );
+                    .translateComponent(
+                        displayNameComponent,
+                        languagePlayer,
+                        getConfig().getHologramSyntax()
+                    )
+                    .mapToObj(
+                        Function.identity(),
+                        () -> displayNameComponent,
+                        () -> null
+                    );
 
                 this.dataValueHandler.getPlayerDisplayNameDataValue(result).ifPresent(dataValues::add);
                 this.dataValueHandler.getCustomNameVisibilityDataValue(result != null).ifPresent(dataValues::add);
@@ -533,16 +545,16 @@ public class EntitiesPacketHandler extends PacketHandler {
                 // On MC 1.13+, display names are sent as text components instead of legacy text
                 val displayNameComponent = ComponentUtils.deserializeFromJson(displayName);
                 val result = parser()
-                        .translateComponent(
-                                displayNameComponent,
-                                languagePlayer,
-                                getConfig().getHologramSyntax()
-                        )
-                        .mapToObj(
-                                Function.identity(),
-                                () -> displayNameComponent,
-                                () -> null
-                        );
+                    .translateComponent(
+                        displayNameComponent,
+                        languagePlayer,
+                        getConfig().getHologramSyntax()
+                    )
+                    .mapToObj(
+                        Function.identity(),
+                        () -> displayNameComponent,
+                        () -> null
+                    );
 
                 this.dataWatcherHandler.getPlayerDisplayNameWatchableObject(result).ifPresent(watchableObjects::add);
                 this.dataWatcherHandler.getCustomNameVisibilityWatchableObject(result != null).ifPresent(watchableObjects::add);
@@ -558,12 +570,12 @@ public class EntitiesPacketHandler extends PacketHandler {
                 final List<WrappedWatchableObject> watchableObjects = new ArrayList<>();
                 // On MC 1.8 to 1.12, display names are sent as legacy text
                 val result = parser()
-                        .translateString(displayName, languagePlayer, getConfig().getHologramSyntax())
-                        .mapToObj(
-                                Function.identity(),
-                                () -> displayName,
-                                () -> null
-                        );
+                    .translateString(displayName, languagePlayer, getConfig().getHologramSyntax())
+                    .mapToObj(
+                        Function.identity(),
+                        () -> displayName,
+                        () -> null
+                    );
 
                 this.dataWatcherHandler.getPlayerDisplayNameWatchableObject(result).ifPresent(watchableObjects::add);
                 this.dataWatcherHandler.getCustomNameVisibilityWatchableObject(result != null).ifPresent(watchableObjects::add);
@@ -622,19 +634,19 @@ public class EntitiesPacketHandler extends PacketHandler {
             if (getMcVersion() < 9) {
                 // On MC 1.8, location is defined as an integer and multiplied by 32
                 packetSpawn.getIntegers()
-                        .writeSafely(1, (int) Math.floor(humanEntity.getLocation().getX() * 32.00D))
-                        .writeSafely(2, (int) Math.floor(humanEntity.getLocation().getY() * 32.00D))
-                        .writeSafely(3, (int) Math.floor(humanEntity.getLocation().getZ() * 32.00D));
+                    .writeSafely(1, (int) Math.floor(humanEntity.getLocation().getX() * 32.00D))
+                    .writeSafely(2, (int) Math.floor(humanEntity.getLocation().getY() * 32.00D))
+                    .writeSafely(3, (int) Math.floor(humanEntity.getLocation().getZ() * 32.00D));
             } else {
                 // On MC 1.9+, location is defined as a double
                 packetSpawn.getDoubles()
-                        .writeSafely(0, humanEntity.getLocation().getX())
-                        .writeSafely(1, humanEntity.getLocation().getY())
-                        .writeSafely(2, humanEntity.getLocation().getZ());
+                    .writeSafely(0, humanEntity.getLocation().getX())
+                    .writeSafely(1, humanEntity.getLocation().getY())
+                    .writeSafely(2, humanEntity.getLocation().getZ());
             }
             packetSpawn.getBytes()
-                    .writeSafely(0, (byte) (int) (humanEntity.getLocation().getYaw() * 256.0F / 360.0F))
-                    .writeSafely(1, (byte) (int) (humanEntity.getLocation().getPitch() * 256.0F / 360.0F));
+                .writeSafely(0, (byte) (int) (humanEntity.getLocation().getYaw() * 256.0F / 360.0F))
+                .writeSafely(1, (byte) (int) (humanEntity.getLocation().getPitch() * 256.0F / 360.0F));
             packetSpawn.getDataWatcherModifier().writeSafely(0, WrappedDataWatcher.getEntityWatcher(humanEntity));
 
             // Even though this is sent in the spawn packet, we still need to send it again for some reason
@@ -651,9 +663,9 @@ public class EntitiesPacketHandler extends PacketHandler {
             if (isHiddenEntity) {
                 // If the entity should not show up in tab, hide it again
                 Bukkit.getScheduler().runTaskLater(
-                        getMain().getLoader(),
-                        () -> sendPacket(bukkitPlayer, packetRemove, true),
-                        4L
+                    getMain().getLoader(),
+                    () -> sendPacket(bukkitPlayer, packetRemove, true),
+                    4L
                 );
             }
         }
@@ -663,7 +675,7 @@ public class EntitiesPacketHandler extends PacketHandler {
     private PacketContainer getPlayerInfoRemovePacket(Player humanEntity) {
         if (MinecraftVersion.FEATURE_PREVIEW_UPDATE.atOrAbove()) { // 1.19.3
             val uuidList = Collections.singletonList(
-                    humanEntity.getUniqueId()
+                humanEntity.getUniqueId()
             );
 
             val packetRemove = createPacket(PacketType.Play.Server.PLAYER_INFO_REMOVE);
@@ -671,12 +683,12 @@ public class EntitiesPacketHandler extends PacketHandler {
             return packetRemove;
         } else {
             val playerInfoDataList = Collections.singletonList(
-                    new PlayerInfoData(
-                            WrappedGameProfile.fromPlayer(humanEntity),
-                            50,
-                            EnumWrappers.NativeGameMode.fromBukkit(humanEntity.getGameMode()),
-                            WrappedChatComponent.fromText(humanEntity.getPlayerListName())
-                    )
+                new PlayerInfoData(
+                    WrappedGameProfile.fromPlayer(humanEntity),
+                    50,
+                    EnumWrappers.NativeGameMode.fromBukkit(humanEntity.getGameMode()),
+                    WrappedChatComponent.fromText(humanEntity.getPlayerListName())
+                )
             );
 
             val packetRemove = createPacket(PacketType.Play.Server.PLAYER_INFO);
@@ -689,22 +701,22 @@ public class EntitiesPacketHandler extends PacketHandler {
     private PacketContainer getPlayerInfoAddPacket(Player humanEntity) {
         if (MinecraftVersion.FEATURE_PREVIEW_UPDATE.atOrAbove()) { // 1.19.3
             val playerInfoDataList = Collections.singletonList(
-                    new PlayerInfoData(
-                            humanEntity.getUniqueId(),
-                            50,
-                            true,
-                            EnumWrappers.NativeGameMode.fromBukkit(humanEntity.getGameMode()),
-                            WrappedGameProfile.fromPlayer(humanEntity),
-                            WrappedChatComponent.fromText(humanEntity.getPlayerListName()),
-                            null
-                    )
+                new PlayerInfoData(
+                    humanEntity.getUniqueId(),
+                    50,
+                    true,
+                    EnumWrappers.NativeGameMode.fromBukkit(humanEntity.getGameMode()),
+                    WrappedGameProfile.fromPlayer(humanEntity),
+                    WrappedChatComponent.fromText(humanEntity.getPlayerListName()),
+                    null
+                )
             );
 
             val actionList = EnumSet.of(
-                    EnumWrappers.PlayerInfoAction.ADD_PLAYER,
-                    EnumWrappers.PlayerInfoAction.UPDATE_GAME_MODE,
-                    EnumWrappers.PlayerInfoAction.UPDATE_LATENCY,
-                    EnumWrappers.PlayerInfoAction.UPDATE_DISPLAY_NAME
+                EnumWrappers.PlayerInfoAction.ADD_PLAYER,
+                EnumWrappers.PlayerInfoAction.UPDATE_GAME_MODE,
+                EnumWrappers.PlayerInfoAction.UPDATE_LATENCY,
+                EnumWrappers.PlayerInfoAction.UPDATE_DISPLAY_NAME
             );
 
             val packetAdd = createPacket(PacketType.Play.Server.PLAYER_INFO);
@@ -713,12 +725,12 @@ public class EntitiesPacketHandler extends PacketHandler {
             return packetAdd;
         } else {
             val playerInfoDataList = Collections.singletonList(
-                    new PlayerInfoData(
-                            WrappedGameProfile.fromPlayer(humanEntity),
-                            50,
-                            EnumWrappers.NativeGameMode.fromBukkit(humanEntity.getGameMode()),
-                            WrappedChatComponent.fromText(humanEntity.getPlayerListName())
-                    )
+                new PlayerInfoData(
+                    WrappedGameProfile.fromPlayer(humanEntity),
+                    50,
+                    EnumWrappers.NativeGameMode.fromBukkit(humanEntity.getGameMode()),
+                    WrappedChatComponent.fromText(humanEntity.getPlayerListName())
+                )
             );
 
             val packetAdd = createPacket(PacketType.Play.Server.PLAYER_INFO);
@@ -805,7 +817,7 @@ public class EntitiesPacketHandler extends PacketHandler {
      */
     private <T> void addEntity(Map<World, Map<Integer, T>> map, World world, int id, T value) {
         map.computeIfAbsent(world, w -> new ConcurrentHashMap<>())
-                .put(id, value);
+            .put(id, value);
     }
 
     /**
@@ -832,12 +844,12 @@ public class EntitiesPacketHandler extends PacketHandler {
             return null;
         }
         return parser()
-                .translateString(string, languagePlayer, getConfig().getHologramSyntax())
-                .mapToObj(
-                        result -> result.length() > 16 ? result.substring(0, 16) : result,
-                        () -> string.length() > 16 ? string.substring(0, 16) : string,
-                        () -> null
-                );
+            .translateString(string, languagePlayer, getConfig().getHologramSyntax())
+            .mapToObj(
+                result -> result.length() > 16 ? result.substring(0, 16) : result,
+                () -> string.length() > 16 ? string.substring(0, 16) : string,
+                () -> null
+            );
     }
 
     @SuppressWarnings({"deprecation"})
@@ -913,10 +925,10 @@ public class EntitiesPacketHandler extends PacketHandler {
          * @return The translated watchable object, if applicable.
          */
         abstract Optional<WrappedWatchableObject> translatePlayerDisplayNameWatchableObject(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<String> saveToCache,
-                @Nullable Consumer<Boolean> hasCustomNameConsumer);
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<String> saveToCache,
+            @Nullable Consumer<Boolean> hasCustomNameConsumer);
 
         /**
          * Translate the content of a WatchableObject containing an item.
@@ -927,9 +939,9 @@ public class EntitiesPacketHandler extends PacketHandler {
          * @return The translated watchable object, if applicable.
          */
         abstract Optional<WrappedWatchableObject> translateItemFrameItems(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<ItemStack> saveToCache
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<ItemStack> saveToCache
         );
     }
 
@@ -966,10 +978,10 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         @Override
         Optional<WrappedWatchableObject> translatePlayerDisplayNameWatchableObject(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<String> saveToCache,
-                @Nullable Consumer<Boolean> hasCustomNameConsumer) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<String> saveToCache,
+            @Nullable Consumer<Boolean> hasCustomNameConsumer) {
             String displayName = (String) watchableObject.getValue();
             if (displayName == null) {
                 return Optional.empty();
@@ -979,7 +991,7 @@ public class EntitiesPacketHandler extends PacketHandler {
             saveToCache.accept(displayName);
 
             val result = parser()
-                    .translateString(displayName, languagePlayer, getConfig().getHologramSyntax());
+                .translateString(displayName, languagePlayer, getConfig().getHologramSyntax());
 
             if (result.isUnchanged()) {
                 // if unchanged, return original watchable object
@@ -994,9 +1006,9 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         @Override
         Optional<WrappedWatchableObject> translateItemFrameItems(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<ItemStack> saveToCache) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<ItemStack> saveToCache) {
             return Optional.empty();
         }
     }
@@ -1014,8 +1026,8 @@ public class EntitiesPacketHandler extends PacketHandler {
 
             // Display name has: index 2 and type string
             val watcherObject = new WrappedDataWatcher.WrappedDataWatcherObject(
-                    2,
-                    WrappedDataWatcher.Registry.get(String.class)
+                2,
+                WrappedDataWatcher.Registry.get(String.class)
             );
 
             return Optional.of(new WrappedWatchableObject(watcherObject, payload));
@@ -1031,8 +1043,8 @@ public class EntitiesPacketHandler extends PacketHandler {
             // Custom name visibility has: index 3 and type boolean
             // https://wiki.vg/Entity_metadata#Entity
             val watcherObject = new WrappedDataWatcher.WrappedDataWatcherObject(
-                    3,
-                    WrappedDataWatcher.Registry.get(Boolean.class)
+                3,
+                WrappedDataWatcher.Registry.get(Boolean.class)
             );
 
             return Optional.of(new WrappedWatchableObject(watcherObject, false));
@@ -1045,10 +1057,10 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         @Override
         Optional<WrappedWatchableObject> translatePlayerDisplayNameWatchableObject(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<String> saveToCache,
-                @Nullable Consumer<Boolean> hasCustomNameConsumer) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<String> saveToCache,
+            @Nullable Consumer<Boolean> hasCustomNameConsumer) {
             String displayName = (String) watchableObject.getValue();
             if (displayName == null) {
                 return Optional.empty();
@@ -1058,7 +1070,7 @@ public class EntitiesPacketHandler extends PacketHandler {
             saveToCache.accept(displayName);
 
             val result = parser()
-                    .translateString(displayName, languagePlayer, getConfig().getHologramSyntax());
+                .translateString(displayName, languagePlayer, getConfig().getHologramSyntax());
 
             if (result.isUnchanged()) {
                 // if unchanged, return original watchable object
@@ -1073,9 +1085,9 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         @Override
         Optional<WrappedWatchableObject> translateItemFrameItems(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<ItemStack> saveToCache) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<ItemStack> saveToCache) {
             return Optional.empty();
         }
     }
@@ -1094,8 +1106,8 @@ public class EntitiesPacketHandler extends PacketHandler {
             // Display name has: index 2 and type chat
             // https://wiki.vg/Entity_metadata#Entity
             val watcherObject = new WrappedDataWatcher.WrappedDataWatcherObject(
-                    2,
-                    WrappedDataWatcher.Registry.getChatComponentSerializer(true)
+                2,
+                WrappedDataWatcher.Registry.getChatComponentSerializer(true)
             );
 
             return Optional.of(new WrappedWatchableObject(watcherObject, payload));
@@ -1117,8 +1129,8 @@ public class EntitiesPacketHandler extends PacketHandler {
             // Custom name visibility has: index 3 and type boolean
             // https://wiki.vg/Entity_metadata#Entity
             val watcherObject = new WrappedDataWatcher.WrappedDataWatcherObject(
-                    3,
-                    WrappedDataWatcher.Registry.get(Boolean.class)
+                3,
+                WrappedDataWatcher.Registry.get(Boolean.class)
             );
 
             return Optional.of(new WrappedWatchableObject(watcherObject, false));
@@ -1129,8 +1141,8 @@ public class EntitiesPacketHandler extends PacketHandler {
             // Display name has: index 8 and type slot (item stack)
             // https://wiki.vg/Entity_metadata#Entity
             val watcherObject = new WrappedDataWatcher.WrappedDataWatcherObject(
-                    8,
-                    WrappedDataWatcher.Registry.getItemStackSerializer(false)
+                8,
+                WrappedDataWatcher.Registry.getItemStackSerializer(false)
             );
 
             // We cannot pass translated item stack to constructor because it doesn't get unwrapped
@@ -1142,10 +1154,10 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         @Override
         Optional<WrappedWatchableObject> translatePlayerDisplayNameWatchableObject(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<String> saveToCache,
-                @Nullable Consumer<Boolean> hasCustomNameConsumer) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<String> saveToCache,
+            @Nullable Consumer<Boolean> hasCustomNameConsumer) {
             val displayName = (Optional<WrappedChatComponent>) watchableObject.getValue();
             if (!displayName.isPresent()) {
                 return Optional.empty();
@@ -1159,7 +1171,7 @@ public class EntitiesPacketHandler extends PacketHandler {
             val displayNameComponent = WrappedComponentUtils.deserialize(displayName.get());
 
             val result = parser()
-                    .translateComponent(displayNameComponent, languagePlayer, getConfig().getHologramSyntax());
+                .translateComponent(displayNameComponent, languagePlayer, getConfig().getHologramSyntax());
 
             if (result.isUnchanged()) {
                 // if unchanged, return original watchable object
@@ -1174,9 +1186,9 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         @Override
         Optional<WrappedWatchableObject> translateItemFrameItems(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedWatchableObject watchableObject,
-                Consumer<ItemStack> saveToCache) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedWatchableObject watchableObject,
+            Consumer<ItemStack> saveToCache) {
             val value = watchableObject.getValue();
             if (!(value instanceof ItemStack)) {
                 return Optional.empty();
@@ -1215,11 +1227,11 @@ public class EntitiesPacketHandler extends PacketHandler {
             // Display name has: index 2 and type chat
             // https://wiki.vg/Entity_metadata#Entity
             return Optional.of(
-                    new WrappedDataValue(
-                            2,
-                            WrappedDataWatcher.Registry.getChatComponentSerializer(true),
-                            payload
-                    )
+                new WrappedDataValue(
+                    2,
+                    WrappedDataWatcher.Registry.getChatComponentSerializer(true),
+                    payload
+                )
             );
         }
 
@@ -1232,11 +1244,11 @@ public class EntitiesPacketHandler extends PacketHandler {
             // Custom name visibility has: index 3 and type boolean
             // https://wiki.vg/Entity_metadata#Entity
             return Optional.of(
-                    new WrappedDataValue(
-                            3,
-                            WrappedDataWatcher.Registry.get(Boolean.class),
-                            false
-                    )
+                new WrappedDataValue(
+                    3,
+                    WrappedDataWatcher.Registry.get(Boolean.class),
+                    false
+                )
             );
         }
 
@@ -1245,9 +1257,9 @@ public class EntitiesPacketHandler extends PacketHandler {
             // https://wiki.vg/Entity_metadata#Entity
             // We cannot pass translated item stack to constructor because it doesn't get unwrapped
             val dataValue = new WrappedDataValue(
-                    8,
-                    WrappedDataWatcher.Registry.getItemStackSerializer(false),
-                    null
+                8,
+                WrappedDataWatcher.Registry.getItemStackSerializer(false),
+                null
             );
 
             // The setter unwraps the Bukkit class to the NMS class
@@ -1256,10 +1268,10 @@ public class EntitiesPacketHandler extends PacketHandler {
         }
 
         Optional<WrappedDataValue> translatePlayerDisplayNameDataValue(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedDataValue dataValue,
-                Consumer<String> saveToCache,
-                @Nullable Consumer<Boolean> hasCustomNameConsumer) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedDataValue dataValue,
+            Consumer<String> saveToCache,
+            @Nullable Consumer<Boolean> hasCustomNameConsumer) {
             val displayName = (Optional<WrappedChatComponent>) dataValue.getValue();
             if (!displayName.isPresent()) {
                 return Optional.empty();
@@ -1273,7 +1285,7 @@ public class EntitiesPacketHandler extends PacketHandler {
             val displayNameComponent = WrappedComponentUtils.deserialize(displayName.get());
 
             val result = parser()
-                    .translateComponent(displayNameComponent, languagePlayer, getConfig().getHologramSyntax());
+                .translateComponent(displayNameComponent, languagePlayer, getConfig().getHologramSyntax());
 
             if (result.isUnchanged()) {
                 // if unchanged, return original watchable object
@@ -1287,9 +1299,9 @@ public class EntitiesPacketHandler extends PacketHandler {
         }
 
         Optional<WrappedDataValue> translateItemFrameItems(
-                SpigotLanguagePlayer languagePlayer,
-                WrappedDataValue dataValue,
-                Consumer<ItemStack> saveToCache) {
+            SpigotLanguagePlayer languagePlayer,
+            WrappedDataValue dataValue,
+            Consumer<ItemStack> saveToCache) {
             val value = dataValue.getValue();
             if (!(value instanceof ItemStack)) {
                 return Optional.empty();
