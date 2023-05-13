@@ -760,7 +760,7 @@ public class ProtocolLibListener implements PacketListener {
             return;
         }
         main.getScheduler().runTask(
-                null,
+                packet.getPlayer().getLocation(),
                 () -> languagePlayer.setLang(
                         main.getLanguageManager()
                                 .getLanguageByLocaleOrDefault(packet.getPacket().getStrings().readSafely(0))
