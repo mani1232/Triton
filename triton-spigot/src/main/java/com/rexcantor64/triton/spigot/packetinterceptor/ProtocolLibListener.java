@@ -759,8 +759,8 @@ public class ProtocolLibListener implements PacketListener {
         if (!languagePlayer.isWaitingForClientLocale()) {
             return;
         }
-        Bukkit.getScheduler().runTask(
-                main.getLoader(),
+        main.getScheduler().runTask(
+                null,
                 () -> languagePlayer.setLang(
                         main.getLanguageManager()
                                 .getLanguageByLocaleOrDefault(packet.getPacket().getStrings().readSafely(0))
