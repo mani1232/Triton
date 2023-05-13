@@ -8,6 +8,7 @@ String pluginWebsite = project.property("pluginWebsite")
 String pluginAuthor = project.property("pluginAuthor")
 String pluginApiVersion = project.property("pluginApiVersion")
 String pluginName = project.property("pluginName")
+String mainClass = 'com.rexcantor64.triton.spigot.plugin.SpigotPlugin'
 
 apply plugin: 'net.minecrell.plugin-yml.bukkit'
 group 'com.rexcantor64.triton'
@@ -35,13 +36,26 @@ dependencies {
     implementation 'org.bstats:bstats-bukkit:3.0.0'
 }
 
+tasks {
+    processResources {
+        filesMatching(["paper-plugin.yml"]) {
+            expand(["projectVersion": project.version,
+                    "mainClass": mainClass,
+                    "pluginAuthor": pluginAuthor,
+                    "pluginWebsite": pluginWebsite,
+                    "pluginDescription": pluginDescription,
+                    "pluginName": pluginName])
+        }
+    }
+}
+
 bukkit {
     name = pluginName
     version = project.version
     description = pluginDescription
     website = pluginWebsite
     author = pluginAuthor
-    main = 'com.rexcantor64.triton.spigot.plugin.SpigotPlugin'
+    main = mainClass
     apiVersion = pluginApiVersion
 
     depend = ['ProtocolLib']

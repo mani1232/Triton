@@ -150,15 +150,17 @@ public class SpigotTriton extends Triton<SpigotLanguagePlayer, SpigotBridgeManag
     private PluginCommand registerTritonCommand() {
         val constructor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
         constructor.setAccessible(true);
-        val command = (PluginCommand) constructor.newInstance("triton", getLoader());
+        val commandTriton = (PluginCommand) constructor.newInstance("triton", getLoader());
+        val commandTwin = (PluginCommand) constructor.newInstance("twin", getLoader());
 
-        command.setAliases(getConfig().getCommandAliases());
-        command.setDescription("The main command of Triton.");
+        commandTriton.setAliases(getConfig().getCommandAliases());
+        commandTriton.setDescription("The main command of Triton.");
 
         val commandMap = (CommandMap) ReflectionUtils.getDeclaredField(Bukkit.getServer(), "commandMap");
-        commandMap.register("triton", command);
+        commandMap.register("triton", commandTriton);
+        commandMap.register("twin", commandTwin);
 
-        return command;
+        return commandTriton;
     }
 
     @Override
