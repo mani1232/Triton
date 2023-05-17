@@ -162,15 +162,13 @@ public class SpigotBridgeManager implements PluginMessageListener, BridgeManager
                 } finally {
                     Triton.get().getLanguageManager().setup();
                     Triton.get().getTranslationManager().setup();
-                    Bukkit.getScheduler().runTaskLater(SpigotTriton.asSpigot().getLoader(), () -> Triton.get()
-                            .refreshPlayers(), 10L);
+                    SpigotTriton.asSpigot().getScheduler().runTaskLater(null, 10L,() -> Triton.get()
+                            .refreshPlayers());
                 }
             } else if (action == 1) {
                 val uuid = new UUID(in.readLong(), in.readLong());
                 val lang = Triton.get().getLanguageManager().getLanguageByNameOrDefault(in.readUTF());
-                Bukkit.getScheduler().runTaskLater(SpigotTriton.asSpigot().getLoader(),
-                        () -> ((SpigotLanguagePlayer) Triton.get().getPlayerManager().get(uuid)).setLang(lang, false)
-                        , 10L);
+                SpigotTriton.asSpigot().getScheduler().runTaskLater(null, 10L, () -> ((SpigotLanguagePlayer) Triton.get().getPlayerManager().get(uuid)).setLang(lang, false));
             } else if (action == 2) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), in.readUTF());
             } else if (action == 3) {
@@ -190,8 +188,8 @@ public class SpigotBridgeManager implements PluginMessageListener, BridgeManager
 
                     Triton.get().getLanguageManager().setup();
                     Triton.get().getTranslationManager().setup();
-                    Bukkit.getScheduler().runTaskLater(SpigotTriton.asSpigot().getLoader(), () -> Triton.get()
-                            .refreshPlayers(), 10L);
+                    SpigotTriton.asSpigot().getScheduler().runTaskLater(null, 10L, () -> Triton.get()
+                            .refreshPlayers());
                 });
             } else if (action == 4) {
                 val uuid = new UUID(in.readLong(), in.readLong());
