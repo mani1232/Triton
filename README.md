@@ -12,7 +12,7 @@ Triton is a Minecraft plugin for Spigot and BungeeCord that helps you translate 
 Purchase the plugin on [Spigot](https://spigotmc.org/resources/triton.30331/)
 or [Polymart](https://polymart.org/resource/triton.38)!
 
-## Using the API
+# Using the API
 
 [Download the latest API from the releases tab](https://github.com/tritonmc/Triton/releases/latest)
 or [add it to your project using Gradle/Maven](https://jitpack.io/#tritonmc/Triton).
