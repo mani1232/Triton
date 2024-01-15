@@ -1,6 +1,5 @@
 package com.rexcantor64.triton.config.interfaces;
 
-import com.rexcantor64.triton.utils.NMSUtils;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;

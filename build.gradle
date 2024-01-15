@@ -19,8 +19,8 @@ group 'com.rexcantor64.triton'
 allprojects {
     apply plugin: 'java'
     version '3.9.3'
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = 17
+    targetCompatibility = 17
     repositories {
         mavenLocal()
         mavenCentral()
@@ -36,6 +36,7 @@ allprojects {
             }
         }
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        maven { url 'https://repo.papermc.io/repository/maven-public/' }
         maven { url 'https://repo.dmulloy2.net/nexus/repository/public/' }
         maven { url 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
         maven {
@@ -51,11 +52,11 @@ allprojects {
 
 subprojects {
     dependencies {
-        compileOnly 'org.projectlombok:lombok:1.18.22'
-        annotationProcessor 'org.projectlombok:lombok:1.18.22'
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-        testCompileOnly 'org.projectlombok:lombok:1.18.22'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
+        testCompileOnly 'org.projectlombok:lombok:1.18.30'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
     }
 }
 
