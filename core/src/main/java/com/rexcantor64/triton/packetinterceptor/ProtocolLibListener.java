@@ -771,8 +771,9 @@ public class ProtocolLibListener implements PacketListener, PacketInterceptor {
             return;
         }
         if (packet.getPacketType() == PacketType.Play.Client.SETTINGS) {
-            Bukkit.getScheduler().runTask(
+            Bukkit.getRegionScheduler().execute(
                     main.getLoader(),
+                    packet.getPlayer().getLocation(),
                     () -> languagePlayer.setLang(
                             main.getLanguageManager()
                                     .getLanguageByLocale(packet.getPacket().getStrings().readSafely(0), true)
@@ -782,7 +783,7 @@ public class ProtocolLibListener implements PacketListener, PacketInterceptor {
             val clientConfigurations = packet.getPacket().getStructures().withType(WrappedClientConfiguration.getWrappedClass(), WrappedClientConfiguration.CONVERTER);
             val locale = clientConfigurations.readSafely(0).getLocale();
             val language = main.getLanguageManager().getLanguageByLocale(locale, true);
-            Bukkit.getScheduler().runTaskLater(main.getLoader(), () -> languagePlayer.setLang(language), 2L);
+            Bukkit.getRegionScheduler().runDelayed(main.getLoader(), packet.getPlayer().getLocation(),scheduledTask -> languagePlayer.setLang(language), 2L);
         }
     }
 

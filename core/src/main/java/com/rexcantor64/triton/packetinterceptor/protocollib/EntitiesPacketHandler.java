@@ -108,15 +108,13 @@ public class EntitiesPacketHandler extends PacketHandler {
             }
             // TODO For now, it is only possible to translate NPCs that are saved server side
             // Fetch entity object using main thread, otherwise we'll get concurrency issues
-            Triton.asSpigot()
-                    .callSync(() -> packet.getPacket().getEntityModifier(packet).readSafely(0))
-                    .ifPresent(entity -> addEntity(
-                                    languagePlayer.getPlayersMap(),
-                                    packet.getPlayer().getWorld(),
-                                    entity.getEntityId(),
-                                    entity
-                            )
-                    );
+            Bukkit.getRegionScheduler().execute(Triton.asSpigot().getLoader(), packet.getPlayer().getLocation(), () -> Optional.ofNullable(packet.getPacket().getEntityModifier(packet).readSafely(0)).ifPresent(entity -> addEntity(
+                            languagePlayer.getPlayersMap(),
+                            packet.getPlayer().getWorld(),
+                            entity.getEntityId(),
+                            entity
+                    )
+            ));
         }
 
         // Add entity to cache
@@ -200,15 +198,13 @@ public class EntitiesPacketHandler extends PacketHandler {
 
         // TODO For now, it is only possible to translate NPCs that are saved server side
         // Fetch entity object using main thread, otherwise we'll get concurrency issues
-        Triton.asSpigot()
-                .callSync(() -> packet.getPacket().getEntityModifier(packet).readSafely(0))
-                .ifPresent(entity -> addEntity(
-                                languagePlayer.getPlayersMap(),
-                                packet.getPlayer().getWorld(),
-                                entity.getEntityId(),
-                                entity
-                        )
-                );
+        Bukkit.getRegionScheduler().execute(Triton.asSpigot().getLoader(), packet.getPlayer().getLocation(), () -> Optional.ofNullable(packet.getPacket().getEntityModifier(packet).readSafely(0)).ifPresent(entity -> addEntity(
+                        languagePlayer.getPlayersMap(),
+                        packet.getPlayer().getWorld(),
+                        entity.getEntityId(),
+                        entity
+                )
+        ));
     }
 
     /**
@@ -699,9 +695,10 @@ public class EntitiesPacketHandler extends PacketHandler {
             sendPacket(bukkitPlayer, packetLook, true);
             if (isHiddenEntity) {
                 // If the entity should not show up in tab, hide it again
-                Bukkit.getScheduler().runTaskLater(
+                Bukkit.getRegionScheduler().runDelayed(
                         getMain().getLoader(),
-                        () -> sendPacket(bukkitPlayer, packetRemove, true),
+                        bukkitPlayer.getLocation(),
+                        scheduledTask -> sendPacket(bukkitPlayer, packetRemove, true),
                         4L
                 );
             }

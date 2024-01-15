@@ -20,6 +20,7 @@ import com.rexcantor64.triton.terminal.Log4jInjector;
 import com.rexcantor64.triton.utils.NMSUtils;
 import com.rexcantor64.triton.wrappers.MaterialWrapperManager;
 import com.rexcantor64.triton.wrappers.items.ItemStackParser;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.val;
@@ -27,9 +28,11 @@ import net.md_5.bungee.api.ChatColor;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Objects;
@@ -52,7 +55,7 @@ public class SpigotMLP extends Triton {
     private SpigotCommandHandler commandHandler;
     @Getter
     private boolean papiEnabled = false;
-    private int refreshTaskId = -1;
+    private ScheduledTask refreshTaskId = null;
 
     public SpigotMLP(PluginLoader loader) {
         val versionSplit = Bukkit.getServer().getClass().getPackage().getName().split("_");
@@ -143,10 +146,12 @@ public class SpigotMLP extends Triton {
 
     @Override
     protected void startConfigRefreshTask() {
-        if (refreshTaskId != -1) Bukkit.getScheduler().cancelTask(refreshTaskId);
+        if (refreshTaskId != null) {
+            refreshTaskId.cancel();
+            refreshTaskId = null;
+        }
         if (getConf().getConfigAutoRefresh() <= 0) return;
-        refreshTaskId = Bukkit.getScheduler()
-                .scheduleSyncDelayedTask(getLoader(), this::reload, getConf().getConfigAutoRefresh() * 20L);
+        refreshTaskId = Bukkit.getGlobalRegionScheduler().runAtFixedRate(getLoader(), scheduledTask -> reload(), 1, getConf().getConfigAutoRefresh() * 20L);
     }
 
     /**
@@ -229,9 +234,10 @@ public class SpigotMLP extends Triton {
 
     @Override
     public void runAsync(Runnable runnable) {
-        Bukkit.getScheduler().runTaskAsynchronously(getLoader(), runnable);
+        Bukkit.getAsyncScheduler().runNow(getLoader(), scheduledTask -> runnable.run());
     }
 
+    @Deprecated(forRemoval = true)
     public <T> Optional<T> callSync(Callable<T> callable) {
         try {
             if (Bukkit.getServer().isPrimaryThread()) {
